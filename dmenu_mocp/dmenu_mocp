@@ -1,7 +1,9 @@
 #!/bin/sh
-#thanks to dpm i just changed up the commands xD
+# thanks to Calvin Morrison for the initial script, so I only had to add
+# a line to display the title and interpret of the running track.
 
-ACTION=`printf "playlist\npause/play\nnext\nprevious\nstart\nexit\nopen\nload\nshuffle\nrepeat\n" | dmenu -i $*`
+SONG=$(mocp -Q %title)
+ACTION=`printf "playlist\npause/play\nnext\nprevious\nstart\nexit\nopen\nload\nshuffle\nrepeat\n%s" "$SONG" | dmenu -i $*`
 
 if [ "$ACTION" == 'playlist' ]; then
   mocp -p
