@@ -1,44 +1,71 @@
-#!/bin/sh
-# thanks to Calvin Morrison for the initial script, so I only had to add
-# a line to display the title and interpret of the running track.
+#!/bin/bash
+#
+# Thanks to Calvin Morrison and Sascha Martensen for the base to build
+# on top of. The original can be found at
+# https://github.com/mutantturkey/mocicon/tree/master/dmenu_mocp
+#
+# Modifications to inherit parameters from dwm execution along with some
+# usability improvements and error handling. Also works normally if
+# calling script in some other fashion.
+#
+# dwm lines for config.def.h
+#
+# static const char *dmenu_mocp[]  = { "dmenu_mocp", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
+#
+# { MODKEY|ShiftMask,             XK_p,      spawn,          {.v = dmenu_mocp } },
 
-SONG=$(mocp -Q %title)
-ACTION=`printf "playlist\npause/play\nnext\nprevious\nstart\nexit\nopen\nload\nshuffle\nrepeat\n%s" "$SONG" | dmenu -i $*`
+# Edit TERM to your favored terminal
+TERM="st -e"
 
-if [ "$ACTION" == 'playlist' ]; then
-  mocp -p
+# Edit MUSICDIR to your liking
+MUSICDIR=~/music
+
+# Not all of my music has metadata
+if [[ ! -z $( mocp -Q %title ) ]]; then
+  SONG=$( mocp -Q %title )
+else
+  SONG=$( mocp -Q %file )
 fi
+
+ACTION=$( echo -e "pause/play\nnext\nprevious\nexit\nstart\nopen\nload playlist\nreload playlist\nshuffle\nrepeat\n" | dmenu -p "$SONG" -i "$@" )
 
 if [ "$ACTION" == 'pause/play' ]; then
   mocp -G
 fi
 
 if [ "$ACTION" == 'next' ]; then
-  mocp -f  
+  mocp -f
 fi
 
 if [ "$ACTION" == 'previous' ]; then
   mocp -r
 fi
 
-if [ "$ACTION" == 'start' ]; then
-  mocp -S
-  dmenu_mocp
-fi
-
 if [ "$ACTION" == 'exit' ]; then
   mocp -x
 fi
 
-if [ "$ACTION" == 'open' ]; then 
-  xterm -e mocp
+if [ "$ACTION" == 'start' ]; then
+  mocp -S
+  dmenu_mocp "$@"
 fi
 
-if [ "$ACTION" == 'load' ]; then
+if [ "$ACTION" == 'open' ]; then
+  $TERM mocp
+fi
+
+if [ "$ACTION" == 'load playlist' ]; then
   mocp -c &&
-  play=`find ~/ -name *.m3u | dmenu -i $*`
-  echo $play
-  mocp -a "$play"
+  playlist=$( find $MUSICDIR -iname "*.m3u" | sort -V | dmenu -p "Load Playlist" -l 10 -i "$@" )
+  echo $playlist
+  # Infinite loop handling for undefined playlist due to escaping dmenu
+  if [[ ! -z "${playlist// }" ]]; then
+    mocp -a "$playlist"
+    mocp -p
+  fi
+fi
+
+if [ "$ACTION" == 'reload playlist' ]; then
   mocp -p
 fi
 
@@ -47,6 +74,5 @@ if [ "$ACTION" == 'shuffle' ]; then
 fi
 
 if [ "$ACTION" == 'repeat' ]; then
-  mocp -t repeat	
+  mocp -t repeat
 fi
-
